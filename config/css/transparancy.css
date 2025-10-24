@@ -1,0 +1,57 @@
+
+/* 文章页背景 */
+.layout_post>#post {
+    /* 以下代表透明度为0.7 可以自行修改*/
+    background: rgba(255,255,255,.8);
+}
+ 
+/* 所有页面背景 */
+#aside_content .card-widget, #recent-posts>.recent-post-item, .layout_page>div:first-child:not(.recent-posts), .layout_post>#page, .layout_post>#post, .read-mode .layout_post>#post{
+    /* 以下代表透明度为0.7 */
+    background: rgba(255,255,255,.7);
+}
+/*侧边卡片的透明度 */
+:root {
+  --card-bg: rgba(255, 255, 255, .7);
+}
+/* 页脚透明 */
+/* #footer {	*/
+	/* 以下代表透明度为0.7 */
+/*	background: rgba(255,255,255, .0); 
+/* 暗色模式调整 */
+[data-theme='dark']:root {
+    --card-bg: rgba(18, 18, 18, 0.9);
+}
+#aside-content .card-info .card-info-social-icons .social-icon :hover{
+    transform: scale(1.5);
+}
+
+#aside-content .avatar-img :hover{
+    transform: none;
+}
+/* 移除文章标题的蓝色背景 */
+.post-title, 
+.page-header,
+#page-header,
+.post-bg,
+.article-header,
+.entry-header,
+.header-cover,
+.top-img {
+  background: transparent !important;
+  color: #000 !important;
+}
+
+/* 特别针对 Butterfly 主题的标题背景 */
+#page-header:before,
+#page-header:after,
+.post-cover,
+.article-cover {
+  background: transparent !important;
+}
+
+/* 移除可能的渐变背景 */
+.article-header:before,
+.post-header:before {
+  background: none !important;
+}
