@@ -165,10 +165,10 @@
 <p>进行代码审计，__construct是对上传的文件进行处理，readflag是进行include文件的，然后利用<code>__destruct</code>这里的if语句，执行是</p>
 <p><code>new $func()</code>和<code>$func()</code>操作，所以大致思路就是上传文件，文件包含</p>
 <p>触发<code>__construct</code>可以用<code>__destruct</code>中的<code>new $func</code>()实例化触发，<code>__construct</code>里面的匿名类中的<code>__construct</code>也可以直接触发</p>
-<p><img src="/image-20251023174531588.png" alt="image-20251023174531588"></p>
+<p><img src="./image-20251023174531588.png" alt="image-20251023174531588"></p>
 <p>怎么触发readflag呢，这里在<code>$this-&gt;key == 'func'</code>的情况下直接让<code>$func=readflag</code>的话是肯定不行的，因为不在一个作用域里</p>
 <p>有这么一个，<code>array(类名，'函数名')()</code>可以直接调用类中的函数,类似于<code>call_user_func(array(类名,'函数名')，参数)</code></p>
-<p><img src="/image-20251023155838083.png" alt="image-20251023155838083"></p>
+<p><img src="./image-20251023155838083.png" alt="image-20251023155838083"></p>
 <p>注意代码里面有两个readflag函数，外层的可以用<code>array()</code>执行，内层的readflag在调用完外层的readflag之后可以直接在全局中调用</p>
 <p>因为外层的readflag执行完后会将函数内的函数声明为全局的，就像上图中。</p>
 <p>所以我们先执行外层的readflag，声明后直接调用内层的readflag，接下来进行序列化操作</p>
